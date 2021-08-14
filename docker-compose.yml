@@ -1,0 +1,55 @@
+version: '3.8'
+services:
+  app: &app
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - .:/demo-app
+      - gem_cache:/gem_cache
+      - node_modules:/demo-app/node_modules
+
+  web:
+    <<: *app
+    command: ./scripts/start_web.sh
+    env_file: .env
+    environment:
+      - WEBPACKER_DEV_SERVER_HOST=webpacker
+    ports:
+      - '3000:3000'
+    stdin_open: true
+    tty: true
+    depends_on:
+      - webpacker
+
+  webpacker:
+    <<: *app
+    env_file: .env
+    environment:
+      - WEBPACKER_DEV_SERVER_HOST=0.0.0.0
+    command: ./scripts/start_webpacker.sh
+    ports:
+      - '3035:3035'
+
+  tests:
+    <<: *app
+    command: ./scripts/run_tests.sh
+    env_file: .env.test
+    environment:
+      - SELENIUM_HOST=selenium # Docker container running Selenium
+      - SELENIUM_PORT=4444
+      - TEST_APP_HOST=tests # Docker container running the test suite
+    depends_on:
+      - selenium
+
+  shared_storage:
+    image: busybox
+    volumes:
+      - gem_cache:/gem_cache
+
+  selenium:
+    image: selenium/standalone-chrome
+
+volumes:
+  gem_cache:
+  node_modules:

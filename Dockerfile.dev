@@ -1,0 +1,29 @@
+FROM ruby:3.0.2-alpine3.13
+
+RUN apk add --update --no-cache \
+  build-base \
+  git \
+  libgit2-dev \
+  libxml2-dev \
+  libxslt-dev \
+  nano \
+  sqlite-dev \
+  tzdata \
+  yarn \
+  zsh
+
+RUN mkdir /demo-app
+WORKDIR /demo-app
+
+ENV BUNDLE_PATH /gem_cache
+ENV BUNDLER_VERSION=2.2.25
+
+RUN gem install bundler -v ${BUNDLER_VERSION}
+
+ADD Gemfile Gemfile.lock /demo-app/
+ADD package.json yarn.lock /demo-app/
+
+RUN bundle config build.nokogiri --use-system-libraries
+
+ADD . /demo-app
+RUN rm -rf ./tmp
